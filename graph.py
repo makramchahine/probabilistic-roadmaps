@@ -393,7 +393,7 @@ class Graph():
 				self.draw_roadmap(configurations=configurations, nears=nears, map_=environment.map,
 					k=k)
 
-			# Draw inital and final robot configuration constantly
+			# Draw initial and final robot configuration constantly
 			self.draw_initial_node(map_=environment.map)
 			self.draw_goal_node(map_=environment.map)
 
