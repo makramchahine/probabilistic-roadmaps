@@ -90,6 +90,35 @@ class Graph():
 
 		return self.x_rand
 
+	def generate_input_nodes(self, unit_pt):
+		# write the description
+		"""Generates a given node on the screen.
+
+		unit_pt is a 2D point in the unit square that will be converted
+		to a point in the screen.
+
+		Parameters
+		----------
+		unit_pt : tuple
+			Point in the unit square.
+
+		Returns
+		-------
+		tuple
+			Coordinates of the given node.
+		"""
+
+		x = int(unit_pt[0]*self.WIDTH), int(unit_pt[1]*self.HEIGHT)
+
+		# Rectangle generated around the generated random node
+		left = x[0] - self.robot_radius
+		top = x[1] - self.robot_radius
+		width = 2*self.robot_radius
+		height = width
+		self.x_rand = pygame.Rect(left, top, width, height)
+
+		return self.x_rand
+
 	def euclidean_distance(self, p1, p2):
 		"""Euclidean distance between two points.
 
