@@ -1,1 +1,6 @@
 /GIFs
+.idea/
+__pycache__/environment.cpython-39.pyc
+__pycache__/graph.cpython-39.pyc
+__pycache__/sampler.cpython-39.pyc
+results/
