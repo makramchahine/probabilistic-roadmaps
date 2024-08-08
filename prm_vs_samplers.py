@@ -5,7 +5,7 @@ import argparse
 import sys
 from sampler import sampler
 import numpy as np
-import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 # Command line arguments
 parser = argparse.ArgumentParser(description='Implements the PRM algorithm for path planning.')
@@ -23,12 +23,13 @@ parser.add_argument('-kr', '--keep_roadmap', type=bool, action=argparse.BooleanO
                     metavar='', required=False, help='Keeps the tree while the robot is moving towards the goal')
 parser.add_argument('-r', '--radius', type=int, metavar='', required=False, default=10,
                     help='Set the robot radius')
-# make an argumnent that is true if present and false if not present to save the data
 parser.add_argument('-s', '--save', type=bool, action=argparse.BooleanOptionalAction,
-                    metavar='', required=False, help='Save the results to a file')
-# same for drawpath
-parser.add_argument('-dp', '--draw_path', type=bool, action=argparse.BooleanOptionalAction,
-                    metavar='', required=False, help='Draw the path to the goal')
+                    metavar='', required=False, default=False, help='Save the results to a numpy file')
+parser.add_argument('--draw', type=bool, action=argparse.BooleanOptionalAction,
+                    metavar='', required=False, default=False, help='Draw the environment')
+parser.add_argument('-d', '--duration', type=float, default=0.02, help='Duration of the simulation')
+parser.add_argument('--level', type=int, default=1, help='Difficulty level of the environment')
+
 args = parser.parse_args()
 
 # Initialization
@@ -42,7 +43,7 @@ def random_init_goal_positions():
     x_goal = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(3 * MAP_DIMENSIONS[1] // 4, MAP_DIMENSIONS[1]))
     return x_init, x_goal
 
-def run_prm_iteration(distribution, x_init, x_goal):
+def run_prm_iteration(distribution, x_init, x_goal, level):
     environment_ = environment.Environment(map_dimensions=MAP_DIMENSIONS)
     graph_ = graph.Graph(start=x_init, goal=x_goal, map_dimensions=MAP_DIMENSIONS, radius=args.radius)
     configurations = []
@@ -116,14 +117,15 @@ def run_prm_iteration(distribution, x_init, x_goal):
 
             is_simulation_finished = True
 
-        if is_simulation_finished and args.draw_path:
-            graph_.draw_roadmap(configurations=success_configurations, nears=success_nears, map_=environment_.map, k=k)
-            graph_.draw_trajectory(configurations=success_configurations, nears=success_nears, environment=environment_,
-                                   obstacles=obstacles, k=k, keep_roadmap=args.keep_roadmap)
-            graph_.draw_path_to_goal(map_=environment_.map, environment=environment_, obstacles=obstacles)
+        if is_simulation_finished:
+            if args.draw:
+                graph_.draw_roadmap(configurations=success_configurations, nears=success_nears, map_=environment_.map, k=k)
+                graph_.draw_trajectory(configurations=success_configurations, nears=success_nears, environment=environment_,
+                                       obstacles=obstacles, k=k, keep_roadmap=True, duration=args.duration)
+                graph_.draw_path_to_goal(map_=environment_.map, environment=environment_, obstacles=obstacles)
             break
 
-        # pygame.display.update()
+        pygame.display.update()
 
     return path_length, graph_.path_coordinates, cardinality
 
@@ -133,13 +135,14 @@ def main():
     results = {sampler: {'lengths': [], 'paths': [], 'init_goal_positions': [], 'cardinality': []} for sampler in samplers}
 
     iterations = args.iterations
+    level = args.level
 
-    for iteration in range(iterations):
+    for iteration in tqdm(range(iterations)):
         x_init, x_goal = random_init_goal_positions()
         ok = False
         while not ok:
             try:
-                run_prm_iteration('uniform', x_init, x_goal)
+                run_prm_iteration('uniform', x_init, x_goal, level)
                 ok = True
             except:
                 x_init, x_goal = random_init_goal_positions()
@@ -149,20 +152,21 @@ def main():
                 ok = False
                 while not ok:
                     try:
-                        path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal)
+                        path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal, level)
                         ok = True
                     except:
-                        path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal)
-                print(f'{distribution} at iteration {iteration}: {path_length}')
+                        path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal, level)
+                # print(f'{distribution} at iteration {iteration}: {path_length}')
                 if path_length:
                     results[distribution]['lengths'].append(path_length)
                     results[distribution]['paths'].append(path_coordinates)
                     results[distribution]['init_goal_positions'].append((x_init, x_goal))
                     results[distribution]['cardinality'].append(cardinality)
 
-    
-    # save the results to a numpy file
-    np.save('results/results_'+str(args.nodes)+"_"+str(args.iterations)+'.npy', results)
+    if args.save:
+        file = "results/results_" + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + ".npy"
+        np.save(file, results)
+        print(f'Results saved to {file}')
 
     pygame.quit()
     sys.exit()

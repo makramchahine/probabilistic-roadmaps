@@ -403,14 +403,14 @@ class Graph():
 
 	def refresh_screen(self, map_, seconds):
 		"""Updates the screen information and waits the given seconds."""
-		seconds = int(seconds * 1000)
+		seconds = int(seconds * 100)
 
 		# Refresh the screen
 		pygame.display.update()
 		pygame.time.delay(seconds)
 		map_.fill(self.WHITE)
 
-	def draw_trajectory(self, configurations, nears, environment, obstacles, k, keep_roadmap):
+	def draw_trajectory(self, configurations, nears, environment, obstacles, k, keep_roadmap, duration=0.02):
 		"""Draws the robot moving in the map."""
 		for i in range(len(self.smooth)):
 			robot_position = self.smooth[i]
@@ -428,4 +428,4 @@ class Graph():
 
 			# Draw path to goal, and the robot movement constantly
 			self.move_robot(position=robot_position, map_=environment.map)
-			self.refresh_screen(map_=environment.map, seconds=0.02)
+			self.refresh_screen(map_=environment.map, seconds=duration)
