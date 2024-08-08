@@ -1,4 +1,208 @@
 import pygame
+import random
+
+POSI = [[436, 227],
+[424, 333],
+[103, 240],
+[379, 170],
+[116, 247],
+[206, 300],
+[60, 152],
+[527, 218],
+[121, 329],
+[44, 167],
+[456, 114],
+[196, 253],
+[442, 236],
+[565, 278],
+[317, 215],
+[308, 300],
+[572, 82],
+[567, 203],
+[437, 189],
+[56, 324],
+[568, 113],
+[300, 135],
+[314, 334],
+[258, 136],
+[245, 162],
+[378, 137],
+[413, 303],
+[167, 303],
+[65, 82],
+[406, 226],
+[531, 215],
+[423, 322],
+[171, 311],
+[289, 127],
+[541, 213],
+[262, 218],
+[387, 96],
+[92, 113],
+[69, 230],
+[60, 240],
+[142, 105],
+[188, 221],
+[109, 159],
+[515, 269],
+[268, 175],
+[412, 173],
+[360, 240],
+[275, 265],
+[27, 180],
+[115, 117],
+[96, 269],
+[512, 274],
+[243, 260],
+[152, 179],
+[366, 194],
+[480, 322],
+[47, 327],
+[450, 335],
+[199, 118],
+[562, 106],
+[55, 233],
+[171, 316],
+[416, 138],
+[286, 207],
+[321, 224],
+[11, 99],
+[549, 83],
+[312, 325],
+[46, 181],
+[476, 277],
+[177, 263],
+[24, 112],
+[568, 135],
+[481, 147],
+[41, 196],
+[117, 207],
+[200, 119],
+[254, 140],
+[243, 320],
+[45, 107],
+[549, 140],
+[328, 158],
+[150, 119],
+[450, 285],
+[101, 297],
+[108, 238],
+[134, 221],
+[177, 109],
+[464, 271],
+[112, 198],
+[46, 311],
+[566, 206],
+[506, 267],
+[47, 110],
+[356, 92],
+[119, 241],
+[97, 272],
+[308, 283],
+[505, 239],
+[441, 92]
+]
+
+INIT = [[35, 50],
+	   [46, 39],
+	   [57, 38],
+	   [47, 50],
+	   [51, 35],
+	   [24, 24],
+	   [31, 37],
+	   [20, 29],
+	   [59, 31],
+	   [40, 31],
+	   [56, 36],
+	   [41, 53],
+	   [40, 37],
+	   [51, 28],
+	   [34, 44],
+	   [50, 26],
+	   [53, 36],
+	   [43, 55],
+	   [21, 46],
+	   [38, 40],
+	   [53, 36],
+	   [29, 41],
+	   [23, 40],
+	   [28, 34],
+	   [35, 47],
+	   [32, 48],
+	   [52, 21],
+	   [39, 56],
+	   [42, 25],
+	   [27, 51],
+	   [52, 40],
+	   [40, 47],
+	   [53, 21],
+	   [39, 35],
+	   [56, 44],
+	   [51, 32],
+	   [20, 45],
+	   [29, 52],
+	   [24, 60],
+	   [28, 46],
+	   [39, 24],
+	   [36, 31],
+	   [45, 24],
+	   [55, 25],
+	   [46, 24],
+	   [54, 51],
+	   [30, 30],
+	   [24, 58],
+	   [38, 55],
+	   [21, 41],
+	   [29, 29],
+	   [29, 54],
+	   [54, 60],
+	   [53, 32],
+	   [57, 21],
+	   [20, 34],
+	   [42, 22],
+	   [47, 55],
+	   [54, 25],
+	   [24, 31],
+	   [51, 20],
+	   [28, 60],
+	   [21, 20],
+	   [39, 47],
+	   [26, 20],
+	   [58, 42],
+	   [54, 21],
+	   [45, 41],
+	   [35, 22],
+	   [60, 51],
+	   [48, 23],
+	   [20, 29],
+	   [52, 23],
+	   [33, 31],
+	   [46, 57],
+	   [47, 56],
+	   [48, 44],
+	   [53, 58],
+	   [52, 37],
+	   [21, 34],
+	   [49, 23],
+	   [38, 60],
+	   [54, 24],
+	   [32, 56],
+	   [52, 29],
+	   [38, 50],
+	   [34, 57],
+	   [35, 50],
+	   [20, 58],
+	   [45, 56],
+	   [54, 45],
+	   [35, 37],
+	   [51, 42],
+	   [27, 35],
+	   [27, 31],
+	   [51, 23],
+	   [34, 43],
+	   [33, 22],
+	   [59, 57],
+	   [30, 28]]
 
 class Environment():
 	"""
@@ -99,7 +303,6 @@ class Environment():
 			A collection of sides composing the I obstacle.
 		"""
 		x, y = initial_point[0], initial_point[1]
-		width, height = 50, 150
 
 		side1 = pygame.Rect(x, y, width, height)
 
@@ -157,7 +360,7 @@ class Environment():
 		x, y = initial_point
 
 		# Calculate thickness as a reasonable ratio of height (e.g., 1/6th of the height)
-		thickness = max(1, height // 6)
+		thickness = max(1, height // 3)
 
 		# Left vertical side
 		side1 = pygame.Rect(x, y, thickness, height)
@@ -172,13 +375,40 @@ class Environment():
 
 		return obstacle
 
+	def generate_maze_I(self):
+		"""
+        Generate a maze-like environment with 'I' shaped obstacles restricted to the middle 2/3rds of the map vertically.
+        """
+		maze_obstacles = []
+		spacing = 10  # Space between obstacles
+		obstacle_width = 60
+		obstacle_height = 60
+
+		decal = 5
+
+		# Calculate boundaries for the middle 2/3rds of the map
+		y_min = self.HEIGHT // 6
+		y_max = 5 * self.HEIGHT // 6
+
+		# Adding random elements within the middle 2/3rds
+		for i in range(40):  # Add some random obstacles
+			i += decal
+			x = POSI[i][0]
+			y = POSI[i][1]
+			obstacle = self.make_obstacles_I(initial_point=(x, y), width=INIT[i][0], height=INIT[i][1])
+			maze_obstacles.append(obstacle)
+
+		self.obstacles = maze_obstacles
+
+
+
 	def make_obstacles(self):
 		if self.level == 0:
 			# Environment 0: no obstacles
 			pass
 
 		if self.level == 1:
-			obstacle1 = self.make_obstacles_M(initial_point=(75 , 140))
+			obstacle1 = self.make_obstacles_M(initial_point=(75, 140))
 			obstacle2 = self.make_obstacles_I(initial_point=(300, 200))
 			obstacle3 = self.make_obstacles_L(initial_point=(425, 160))
 
@@ -187,29 +417,22 @@ class Environment():
 			self.obstacles.append(obstacle2)
 			self.obstacles.append(obstacle3)
 
-
 		elif self.level == 2:
-			# Environment 2: same as 1 with larger obstacles
-			obstacle1 = self.make_obstacles_L(initial_point=(50, 140), width=75, height=200)
-			obstacle2 = self.make_obstacles_M(initial_point=(300, 100), width=200, height=200)
-			obstacle3 = self.make_obstacles_I(initial_point=(550, 160), width=130, height=400)
-
-			self.obstacles.append(obstacle1)
-			self.obstacles.append(obstacle2)
-			self.obstacles.append(obstacle3)
-
-
-		elif self.level == 3:
 			# Environment 3: Add a different set of obstacles
 			obstacle1 = self.make_obstacles_T(initial_point=(25, 200), width=50, height=120)
-			obstacle2 = self.make_obstacles_L(initial_point=(180, 150), width=60, height=130)
-			obstacle3 = self.make_obstacles_I(initial_point=(350, 100), width=100, height=200)
-			obstacle4 = self.make_obstacles_M(initial_point=(450, 220), width=60, height=180)
+			obstacle2 = self.make_obstacles_L(initial_point=(190, 120), width=60, height=80)
+			obstacle3 = self.make_obstacles_I(initial_point=(350, 100), width=50, height=120)
+			obstacle4 = self.make_obstacles_M(initial_point=(450, 220), width=140, height=140)
+			obstacle5 = self.make_obstacle_C(initial_point=(250, 270), width=100, height=100)
 
 			self.obstacles.append(obstacle1)
 			self.obstacles.append(obstacle2)
 			self.obstacles.append(obstacle3)
 			self.obstacles.append(obstacle4)
+			self.obstacles.append(obstacle5)
+
+		elif self.level == 3:
+			self.generate_maze_I()
 
 		return self.obstacles
 
@@ -222,5 +445,12 @@ class Environment():
 				pygame.draw.rect(surface=self.map, color=self.GRAY,
 					rect=side)
 				obstacles.append(side)
+
+		# save a png file of the map without the start and goal positions
+		map = pygame.Surface((self.WIDTH, self.HEIGHT))
+		map.fill(self.WHITE)
+		for obstacle in obstacles:
+			pygame.draw.rect(map, self.GRAY, obstacle)
+		pygame.image.save(map, 'results/map_level_'+str(self.level)+'.png')
 
 		return obstacles				

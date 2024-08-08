@@ -20,13 +20,14 @@ def get_best_batch_id(data, nsamples):
 
 def sampler(n_points = 32, dist = "uniform"):
 
-    # Check if n_points is valid
-    ns_allowed = [32, 64, 128, 256, 512, 1024]
-    assert n_points in ns_allowed, f"n_points must be one of {ns_allowed}"
-
     # Check if dist is valid
     dists_allowed = ["uniform", "sobol_scram", "sobol_unscr", "mpmc"]
     assert dist in dists_allowed, f"dist must be one of {dists_allowed}"
+
+    if not dist=="uniform":
+        # Check if n_points is valid
+        ns_allowed = [32, 64, 128, 256, 512, 1024]
+        assert n_points in ns_allowed, f"n_points must be one of {ns_allowed} for {dist} distribution"
 
     if dist == "uniform":
         x = np.random.rand(n_points, 2)

@@ -46,6 +46,16 @@ def analyse(nodes, iterations, plot=True):
         print(f'  Gain against Uniform: {gain:.2f}%')
         res[distribution]['percentage_gain'] = gain
 
+        if distribution in ["mpmc", "sobol_unscr"]:
+            misses = iterations - len(data['lengths'])
+            print(f'  Misses: {misses}')
+        else:
+            misses = 10*iterations - len(data['lengths'])
+            print(f'  Misses: {misses}')
+
+        res[distribution]['misses'] = misses
+
+
     # save results to csv file
     df = pandas.DataFrame(res)
     df.to_csv('results/summary_' + str(nodes) + "_" + str(iterations) + "_" + str(args.level) + '.csv')
@@ -57,7 +67,7 @@ def analyse(nodes, iterations, plot=True):
         plt.boxplot([data['lengths'] for data in results.values()], tick_labels=results.keys())
         plt.ylabel('Path Length')
         plt.title('Path Lengths for Different Samplers')
-        name = 'results/path_lengths_' + str(args.nodes) + "_" + str(args.iterations) + '.png'
+        name = 'results/path_lengths_' + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + '.png'
         plt.savefig(name)
         
         # Plotting results
@@ -70,6 +80,13 @@ def analyse(nodes, iterations, plot=True):
 
         for distribution, data in results.items():
             plt.subplot(2, 2, plot_id[distribution])
+            # use the map png file as the background
+            img = plt.imread('results/map_level_' + str(args.level) + '.png')
+            # flip the image vertically
+            img = np.flipud(img)
+            # make sure the size of the plot is the same as the map 640, 480
+            plt.imshow(img, extent=[0, 640, 0, 480])
+
             for path_coordinates in data['paths']:
                 xs, ys = zip(*path_coordinates)
                 plt.plot(xs, ys, color=colors[distribution], label=f'{distribution} path', alpha=alphas[distribution])
@@ -78,10 +95,11 @@ def analyse(nodes, iterations, plot=True):
                 plt.plot(xs[-1], ys[-1], 'o', label='Goal', ms=2, color='orange')
 
             plt.title(f'{distribution}')
-            plt.gca().invert_yaxis()
             # remove ticks
             plt.xticks([])
             plt.yticks([])
+            # flip the y axis
+            plt.gca().invert_yaxis()
 
         plt.tight_layout()
         name = 'results/paths_' + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + '.png'

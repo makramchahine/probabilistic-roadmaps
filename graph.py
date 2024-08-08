@@ -40,6 +40,8 @@ class Graph():
 		self.TURQUOISE = (64, 224, 208)
 		self.FUCSIA = (255, 0, 255)
 
+		self.path_coordinates = []
+
 	def is_free(self, point, obstacles):
 		"""Checks if a configuration is colliding with an obstacle.
 
@@ -327,7 +329,6 @@ class Graph():
 
 	def reconstruct_path(self, came_from, current, map_):
 		"""Reconstruct the path from point A to B."""
-		self.path_coordinates = []
 		self.path_coordinates.append(self.x_goal)
 
 		while current in came_from:
@@ -412,6 +413,8 @@ class Graph():
 
 	def draw_trajectory(self, configurations, nears, environment, obstacles, k, keep_roadmap, duration=0.02):
 		"""Draws the robot moving in the map."""
+		if not hasattr(self, 'smooth'):
+			return
 		for i in range(len(self.smooth)):
 			robot_position = self.smooth[i]
 

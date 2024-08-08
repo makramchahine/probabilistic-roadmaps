@@ -39,8 +39,8 @@ pygame.init()
 MAP_DIMENSIONS = 640, 480
 
 def random_init_goal_positions():
-    x_init = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(0, MAP_DIMENSIONS[1] // 4))
-    x_goal = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(3 * MAP_DIMENSIONS[1] // 4, MAP_DIMENSIONS[1]))
+    x_init = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(0, MAP_DIMENSIONS[1] // 6))
+    x_goal = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(5 * MAP_DIMENSIONS[1] // 6, MAP_DIMENSIONS[1]))
     return x_init, x_goal
 
 def run_prm_iteration(distribution, x_init, x_goal, level):
@@ -139,25 +139,12 @@ def main():
 
     for iteration in tqdm(range(iterations)):
         x_init, x_goal = random_init_goal_positions()
-        ok = False
-        while not ok:
-            try:
-                run_prm_iteration('uniform', x_init, x_goal, level)
-                ok = True
-            except:
-                x_init, x_goal = random_init_goal_positions()
+
         for distribution in samplers:
             iterations = 10 if distribution in ['sobol_scram', 'uniform'] else 1
             for _ in range(iterations):
-                ok = False
-                while not ok:
-                    try:
-                        path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal, level)
-                        ok = True
-                    except:
-                        path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal, level)
-                # print(f'{distribution} at iteration {iteration}: {path_length}')
-                if path_length:
+                path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal, level)
+                if not path_length == 0:
                     results[distribution]['lengths'].append(path_length)
                     results[distribution]['paths'].append(path_coordinates)
                     results[distribution]['init_goal_positions'].append((x_init, x_goal))
