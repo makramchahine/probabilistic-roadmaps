@@ -58,7 +58,7 @@ def analyse(nodes, iterations, plot=True):
 
     # save results to csv file
     df = pandas.DataFrame(res)
-    df.to_csv('results/summary_' + str(nodes) + "_" + str(iterations) + "_" + str(args.level) + '.csv')
+    df.to_csv('results/analysis/summary_' + str(nodes) + "_" + str(iterations) + "_" + str(args.level) + '.csv')
 
 
     if plot:
@@ -67,7 +67,7 @@ def analyse(nodes, iterations, plot=True):
         plt.boxplot([data['lengths'] for data in results.values()], tick_labels=results.keys())
         plt.ylabel('Path Length')
         plt.title('Path Lengths for Different Samplers')
-        name = 'results/path_lengths_' + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + '.png'
+        name = 'results/analysis/path_lengths_' + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + '.png'
         plt.savefig(name)
         
         # Plotting results

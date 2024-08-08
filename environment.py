@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 
 POSI = [[436, 227],
 [424, 333],
@@ -223,6 +224,8 @@ class Environment():
 		self.BLUE = (0, 0, 255)
 		self.BROWN = (189, 154, 122)
 		self.YELLOW = (255, 255, 0)
+		self.ORANGE = (255, 165, 0)
+		self.PURPLE = (128, 0, 128)
 		self.GRAY = (105, 105, 105)
 
 		# Map dimensions
@@ -446,11 +449,14 @@ class Environment():
 					rect=side)
 				obstacles.append(side)
 
-		# save a png file of the map without the start and goal positions
-		map = pygame.Surface((self.WIDTH, self.HEIGHT))
-		map.fill(self.WHITE)
-		for obstacle in obstacles:
-			pygame.draw.rect(map, self.GRAY, obstacle)
-		pygame.image.save(map, 'results/map_level_'+str(self.level)+'.png')
+		# save a png file of the map without the start and goal positions if it doesn't exist under 'results/maps/map_level_'+str(self.level)+'.png'
+		file = 'results/maps/map_level_'+str(self.level)+'.png'
+		if not os.path.exists(file):
+			map = pygame.Surface((self.WIDTH, self.HEIGHT))
+			map.fill(self.WHITE)
+			for obstacle in obstacles:
+				color = random.choice([self.GREEN, self.RED, self.BLUE, self.YELLOW, self.ORANGE, self.PURPLE])
+				pygame.draw.rect(map, color, obstacle)
+			pygame.image.save(map, 'results/maps/map_level_'+str(self.level)+'.png')
 
 		return obstacles				
