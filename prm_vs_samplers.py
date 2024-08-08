@@ -44,7 +44,7 @@ def random_init_goal_positions():
     return x_init, x_goal
 
 def run_prm_iteration(distribution, x_init, x_goal, level):
-    environment_ = environment.Environment(map_dimensions=MAP_DIMENSIONS)
+    environment_ = environment.Environment(map_dimensions=MAP_DIMENSIONS, level=level)
     graph_ = graph.Graph(start=x_init, goal=x_goal, map_dimensions=MAP_DIMENSIONS, radius=args.radius)
     configurations = []
     nears = []

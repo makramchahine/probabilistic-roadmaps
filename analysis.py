@@ -11,13 +11,13 @@ import pandas
 parser = argparse.ArgumentParser()
 parser.add_argument('--nodes', type=int, default=100, help='Number of nodes in PRM roadmap')
 parser.add_argument('--iterations', type=int, default=10, help='Number of iterations to run')
+parser.add_argument('--level', type=int, default=1, help='Difficulty level of the environment')
 parser.add_argument('--plot', type=bool, default=True, help='Plot the results')
 args = parser.parse_args()
 
 def analyse(nodes, iterations, plot=True):
     # Load results from file
-    file = "results/results_" + str(nodes) + "_" + str(iterations) + ".npy"
-    # np load pickle true
+    file = "results/results_" + str(nodes) + "_" + str(iterations) + "_" + str(args.level) + ".npy"
     try:
         results = np.load(file, allow_pickle=True).item()
     except:
@@ -48,7 +48,7 @@ def analyse(nodes, iterations, plot=True):
 
     # save results to csv file
     df = pandas.DataFrame(res)
-    df.to_csv('results/results_' + str(nodes) + "_" + str(iterations) + '.csv')
+    df.to_csv('results/summary_' + str(nodes) + "_" + str(iterations) + "_" + str(args.level) + '.csv')
 
 
     if plot:
@@ -84,7 +84,7 @@ def analyse(nodes, iterations, plot=True):
             plt.yticks([])
 
         plt.tight_layout()
-        name = 'results/all_paths_' + str(args.nodes) + "_" + str(args.iterations) + '.png'
+        name = 'results/paths_' + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + '.png'
         plt.savefig(name)
 
 if __name__ == '__main__':

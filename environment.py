@@ -10,7 +10,7 @@ class Environment():
 		The X and Y window dimensions.
 	"""
 	
-	def __init__(self, map_dimensions):
+	def __init__(self, map_dimensions, level=1):
 		# Colors 
 		self.WHITE = (255, 255, 255)
 		self.BLACK = (0, 0, 0)
@@ -29,6 +29,8 @@ class Environment():
 		pygame.display.set_caption('PRM')
 		self.map = pygame.display.set_mode(size=(self.WIDTH, self.HEIGHT))
 		self.map.fill(self.WHITE)
+
+		self.level = level
 
 		self.obstacles = []
 		
@@ -121,7 +123,6 @@ class Environment():
 			A collection of sides composing the M obstacle.
 		"""
 		x, y = initial_point[0], initial_point[1]
-		width, height = 150, 150
 
 		# Create rectangles for the letter 'M'
 		side1 = pygame.Rect(x, y, width // 4, height)  # Left vertical line
@@ -171,16 +172,44 @@ class Environment():
 
 		return obstacle
 
-	def make_obstacles(self, difficulty='easy'):
-		"""Generate the obstacles to be placed on the final map to read MIT."""
-		obstacle1 = self.make_obstacles_M(initial_point=(75 , 150))
-		obstacle2 = self.make_obstacles_I(initial_point=(300, 150))
-		obstacle3 = self.make_obstacles_T(initial_point=(425, 150))
+	def make_obstacles(self):
+		if self.level == 0:
+			# Environment 0: no obstacles
+			pass
+
+		if self.level == 1:
+			obstacle1 = self.make_obstacles_M(initial_point=(75 , 140))
+			obstacle2 = self.make_obstacles_I(initial_point=(300, 200))
+			obstacle3 = self.make_obstacles_L(initial_point=(425, 160))
 
 
-		self.obstacles.append(obstacle1)
-		self.obstacles.append(obstacle2)
-		self.obstacles.append(obstacle3)
+			self.obstacles.append(obstacle1)
+			self.obstacles.append(obstacle2)
+			self.obstacles.append(obstacle3)
+
+
+		elif self.level == 2:
+			# Environment 2: same as 1 with larger obstacles
+			obstacle1 = self.make_obstacles_L(initial_point=(50, 140), width=75, height=200)
+			obstacle2 = self.make_obstacles_M(initial_point=(300, 100), width=200, height=200)
+			obstacle3 = self.make_obstacles_I(initial_point=(550, 160), width=130, height=400)
+
+			self.obstacles.append(obstacle1)
+			self.obstacles.append(obstacle2)
+			self.obstacles.append(obstacle3)
+
+
+		elif self.level == 3:
+			# Environment 3: Add a different set of obstacles
+			obstacle1 = self.make_obstacles_T(initial_point=(25, 200), width=50, height=120)
+			obstacle2 = self.make_obstacles_L(initial_point=(180, 150), width=60, height=130)
+			obstacle3 = self.make_obstacles_I(initial_point=(350, 100), width=100, height=200)
+			obstacle4 = self.make_obstacles_M(initial_point=(450, 220), width=60, height=180)
+
+			self.obstacles.append(obstacle1)
+			self.obstacles.append(obstacle2)
+			self.obstacles.append(obstacle3)
+			self.obstacles.append(obstacle4)
 
 		return self.obstacles
 
