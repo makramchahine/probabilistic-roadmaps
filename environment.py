@@ -33,7 +33,7 @@ class Environment():
 		self.obstacles = []
 		
 
-	def make_obstacles_T(self, initial_point):
+	def make_obstacles_T(self, initial_point, width=50, height=150):
 		"""
 		Given a initial point, it makes a obstacle with shape of T.
 		
@@ -49,7 +49,6 @@ class Environment():
 			A collection of sides composing the T obstacle.			
 		"""
 		x, y = initial_point[0], initial_point[1]
-		width, height = 50, 150
 
 		side1 = pygame.Rect(x, y, height, width)
 		side2 = pygame.Rect((x+height//2) - width//2, y, width, height)
@@ -58,7 +57,7 @@ class Environment():
 
 		return obstacle
 
-	def make_obstacles_L(self, initial_point):
+	def make_obstacles_L(self, initial_point, width=50, height=150):
 		"""
 		Given a initial point, it makes a obstacle with shape of L.
 		
@@ -74,7 +73,6 @@ class Environment():
 			A collection of sides composing the L obstacle.
 		"""	
 		x, y = initial_point[0], initial_point[1]
-		width, height = 50, 150
 
 		side1 = pygame.Rect(x, y, width, height)
 		side2 = pygame.Rect(x, y+height-width, height, width)
@@ -83,7 +81,7 @@ class Environment():
 
 		return obstacle
 
-	def make_obstacles_I(self, initial_point):
+	def make_obstacles_I(self, initial_point, width=50, height=150):
 		"""
 		Given a initial point, it makes a obstacle with shape of I.
 
@@ -107,7 +105,7 @@ class Environment():
 
 		return obstacle
 
-	def make_obstacles_M(self, initial_point):
+	def make_obstacles_M(self, initial_point, width=150, height=150):
 		"""
 		Given a initial point, it makes a obstacle with shape of M.
 
@@ -136,7 +134,44 @@ class Environment():
 
 		return obstacle
 
-	def make_obstacles(self):
+	def make_obstacle_C(self, initial_point, width=50, height=150):
+		"""
+        Given an initial point, it makes an obstacle with the shape of a "C".
+
+        Parameters
+        ----------
+        initial_point : tuple
+            X and Y coordinates, starting from the top-left most part where
+            the obstacle will be placed.
+        width : int, optional
+            The width of the "C" shape, default is 50.
+        height : int, optional
+            The height of the "C" shape, default is 150.
+
+        Returns
+        -------
+        list
+            A collection of sides composing the "C" obstacle as pygame.Rect objects.
+        """
+		x, y = initial_point
+
+		# Calculate thickness as a reasonable ratio of height (e.g., 1/6th of the height)
+		thickness = max(1, height // 6)
+
+		# Left vertical side
+		side1 = pygame.Rect(x, y, thickness, height)
+
+		# Top horizontal side
+		side2 = pygame.Rect(x, y, width, thickness)
+
+		# Bottom horizontal side
+		side3 = pygame.Rect(x, y + height - thickness, width, thickness)
+
+		obstacle = [side1, side2, side3]
+
+		return obstacle
+
+	def make_obstacles(self, difficulty='easy'):
 		"""Generate the obstacles to be placed on the final map to read MIT."""
 		obstacle1 = self.make_obstacles_M(initial_point=(75 , 150))
 		obstacle2 = self.make_obstacles_I(initial_point=(300, 150))

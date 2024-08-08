@@ -1,5 +1,5 @@
 # this function samples 2D points on the unit square according to the input distribution and number of points
-# distributions include: uniform, sobol, and custom mcmp
+# distributions include: uniform, sobol, and custom mpmc
 
 import numpy as np
 import torch
@@ -25,7 +25,7 @@ def sampler(n_points = 32, dist = "uniform"):
     assert n_points in ns_allowed, f"n_points must be one of {ns_allowed}"
 
     # Check if dist is valid
-    dists_allowed = ["uniform", "sobol_scram", "sobol_unscr", "mcmp"]
+    dists_allowed = ["uniform", "sobol_scram", "sobol_unscr", "mpmc"]
     assert dist in dists_allowed, f"dist must be one of {dists_allowed}"
 
     if dist == "uniform":
@@ -37,7 +37,7 @@ def sampler(n_points = 32, dist = "uniform"):
     elif dist == "sobol_unscr":
         x = qmc.Sobol(2, scramble=False).random(n_points)
 
-    elif dist == "mcmp":
+    elif dist == "mpmc":
         path = "/home/makramchahine/repos/PRM/MPMC_points/MPMC_d2_N"+str(n_points)+".npy"
         data = np.load(path)
         b_id, _ = get_best_batch_id(data, n_points)

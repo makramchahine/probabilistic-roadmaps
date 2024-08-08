@@ -23,6 +23,12 @@ parser.add_argument('-kr', '--keep_roadmap', type=bool, action=argparse.BooleanO
                     metavar='', required=False, help='Keeps the tree while the robot is moving towards the goal')
 parser.add_argument('-r', '--radius', type=int, metavar='', required=False, default=10,
                     help='Set the robot radius')
+# make an argumnent that is true if present and false if not present to save the data
+parser.add_argument('-s', '--save', type=bool, action=argparse.BooleanOptionalAction,
+                    metavar='', required=False, help='Save the results to a file')
+# same for drawpath
+parser.add_argument('-dp', '--draw_path', type=bool, action=argparse.BooleanOptionalAction,
+                    metavar='', required=False, help='Draw the path to the goal')
 args = parser.parse_args()
 
 # Initialization
@@ -76,6 +82,7 @@ def run_prm_iteration(distribution, x_init, x_goal):
                         graph_.draw_random_node(map_=environment_.map)
                     configurations.append(x)
             sampling = False
+            cardinality = len(configurations)
 
         if not sampling and not is_simulation_finished:
             for configuration in configurations:
@@ -109,21 +116,21 @@ def run_prm_iteration(distribution, x_init, x_goal):
 
             is_simulation_finished = True
 
-        if is_simulation_finished:
-        #     graph_.draw_roadmap(configurations=success_configurations, nears=success_nears, map_=environment_.map, k=k)
-        #     graph_.draw_trajectory(configurations=success_configurations, nears=success_nears, environment=environment_,
-        #                            obstacles=obstacles, k=k, keep_roadmap=args.keep_roadmap)
-        #     graph_.draw_path_to_goal(map_=environment_.map, environment=environment_, obstacles=obstacles)
+        if is_simulation_finished and args.draw_path:
+            graph_.draw_roadmap(configurations=success_configurations, nears=success_nears, map_=environment_.map, k=k)
+            graph_.draw_trajectory(configurations=success_configurations, nears=success_nears, environment=environment_,
+                                   obstacles=obstacles, k=k, keep_roadmap=args.keep_roadmap)
+            graph_.draw_path_to_goal(map_=environment_.map, environment=environment_, obstacles=obstacles)
             break
 
         # pygame.display.update()
 
-    return path_length, graph_.path_coordinates
+    return path_length, graph_.path_coordinates, cardinality
 
 
 def main():
-    samplers = ['sobol_scram', 'sobol_unscr', 'uniform', 'mcmp']
-    results = {sampler: {'lengths': [], 'paths': [], 'init_goal_positions': []} for sampler in samplers}
+    samplers = ['sobol_scram', 'sobol_unscr', 'uniform', 'mpmc']
+    results = {sampler: {'lengths': [], 'paths': [], 'init_goal_positions': [], 'cardinality': []} for sampler in samplers}
 
     iterations = args.iterations
 
@@ -142,41 +149,18 @@ def main():
                 ok = False
                 while not ok:
                     try:
-                        path_length, path_coordinates = run_prm_iteration(distribution, x_init, x_goal)
+                        path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal)
                         ok = True
                     except:
-                        path_length, path_coordinates = run_prm_iteration(distribution, x_init, x_goal)
+                        path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal)
                 print(f'{distribution} at iteration {iteration}: {path_length}')
                 if path_length:
                     results[distribution]['lengths'].append(path_length)
                     results[distribution]['paths'].append(path_coordinates)
                     results[distribution]['init_goal_positions'].append((x_init, x_goal))
+                    results[distribution]['cardinality'].append(cardinality)
 
-    # Plotting results
-    plt.figure()
-    colors = {'sobol_scram': 'r', 'sobol_unscr': 'orange', 'uniform': 'm', 'mcmp': 'g'}
-
-    for distribution, data in results.items():
-        for path_coordinates in data['paths']:
-            xs, ys = zip(*path_coordinates)
-            plt.plot(xs, ys, color=colors[distribution], label=f'{distribution} path', alpha=0.5)
-
-    plt.xlabel('X-coordinate')
-    plt.ylabel('Y-coordinate')
-    plt.title('PRM Paths for Different Samplers')
-    plt.gca().invert_yaxis()  # Flip y-axis to match pygame
-    plt.gca().set_aspect('equal', adjustable='box')  # Ensure axes aspect ratio is equal
-    # add unique id to the saved name
-    name = 'results/all_paths_'+str(args.nodes)+"_"+str(args.iterations)+'.png'
-    plt.savefig(name)
-    plt.show()
-
-    # Print results
-    for distribution, data in results.items():
-        print(f'Sampler: {distribution}')
-        print(f'  Average Path Length: {np.mean(data["lengths"])}')
-        print(f'  Std Dev Path Length: {np.std(data["lengths"])}')
-
+    
     # save the results to a numpy file
     np.save('results/results_'+str(args.nodes)+"_"+str(args.iterations)+'.npy', results)
 
