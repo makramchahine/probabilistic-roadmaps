@@ -139,7 +139,13 @@ def main():
 
     for iteration in tqdm(range(iterations)):
         x_init, x_goal = random_init_goal_positions()
-
+        ok = False
+        while not ok:
+            try:
+                run_prm_iteration('uniform', x_init, x_goal, level)
+                ok = True
+            except:
+                x_init, x_goal = random_init_goal_positions()
         for distribution in samplers:
             iterations = 10 if distribution in ['sobol_scram', 'uniform'] else 1
             for _ in range(iterations):

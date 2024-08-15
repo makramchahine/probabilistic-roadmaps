@@ -388,6 +388,7 @@ class Environment():
 		obstacle_height = 60
 
 		decal = 5
+		decaf = 20
 
 		# Calculate boundaries for the middle 2/3rds of the map
 		y_min = self.HEIGHT // 6
@@ -395,10 +396,9 @@ class Environment():
 
 		# Adding random elements within the middle 2/3rds
 		for i in range(40):  # Add some random obstacles
-			i += decal
-			x = POSI[i][0]
-			y = POSI[i][1]
-			obstacle = self.make_obstacles_I(initial_point=(x, y), width=INIT[i][0], height=INIT[i][1])
+			x = POSI[i+decal][0]
+			y = POSI[i+decal][1]
+			obstacle = self.make_obstacles_I(initial_point=(x, y), width=INIT[i+decaf][0], height=INIT[i+decaf][1])
 			maze_obstacles.append(obstacle)
 
 		self.obstacles = maze_obstacles
@@ -455,7 +455,7 @@ class Environment():
 			map = pygame.Surface((self.WIDTH, self.HEIGHT))
 			map.fill(self.WHITE)
 			for obstacle in obstacles:
-				color = random.choice([self.GREEN, self.RED, self.BLUE, self.YELLOW, self.ORANGE, self.PURPLE])
+				color = random.choice([self.GREEN, self.RED, self.BLUE, self.ORANGE, self.PURPLE])
 				pygame.draw.rect(map, color, obstacle)
 			pygame.image.save(map, 'results/maps/map_level_'+str(self.level)+'.png')
 

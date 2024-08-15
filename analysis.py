@@ -76,12 +76,12 @@ def analyse(nodes, iterations, plot=True):
         plt.subplot(2, 2, 1)
         colors = {'sobol_scram': 'b', 'sobol_unscr': 'c', 'uniform': 'm', 'mpmc': 'g'}
         plot_id = {'sobol_scram': 1, 'sobol_unscr': 2, 'uniform': 3, 'mpmc': 4}
-        alphas = {'sobol_scram': 0.1, 'sobol_unscr': 1, 'uniform': 0.1, 'mpmc': 1}
+        alphas = {'sobol_scram': 0.1, 'sobol_unscr': 0.7, 'uniform': 0.1, 'mpmc': 0.7}
 
         for distribution, data in results.items():
             plt.subplot(2, 2, plot_id[distribution])
             # use the map png file as the background
-            img = plt.imread('results/map_level_' + str(args.level) + '.png')
+            img = plt.imread('results/maps/map_level_' + str(args.level) + '.png')
             # flip the image vertically
             img = np.flipud(img)
             # make sure the size of the plot is the same as the map 640, 480
@@ -102,7 +102,7 @@ def analyse(nodes, iterations, plot=True):
             plt.gca().invert_yaxis()
 
         plt.tight_layout()
-        name = 'results/paths_' + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + '.png'
+        name = 'results/analysis/paths_' + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + '.png'
         plt.savefig(name)
 
 if __name__ == '__main__':
