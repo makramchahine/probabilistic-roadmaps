@@ -413,7 +413,7 @@ class Environment():
 		if self.level == 1:
 			obstacle1 = self.make_obstacles_M(initial_point=(75, 140))
 			obstacle2 = self.make_obstacles_I(initial_point=(300, 200))
-			obstacle3 = self.make_obstacles_L(initial_point=(425, 160))
+			obstacle3 = self.make_obstacles_T(initial_point=(425, 160))
 
 
 			self.obstacles.append(obstacle1)

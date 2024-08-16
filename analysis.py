@@ -46,15 +46,16 @@ def analyse(nodes, iterations, plot=True):
         print(f'  Gain against Uniform: {gain:.2f}%')
         res[distribution]['percentage_gain'] = gain
 
-        iter = 10 if distribution in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
-        misses = iter*iterations - len(data['lengths'])
+        reps = 10 if distribution in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
+        misses = reps*iterations - len(data['lengths'])
         print(f'  Misses: {misses}')
 
         res[distribution]['misses'] = misses
 
-
     # save results to csv file
     df = pandas.DataFrame(res)
+    # rearrange columns to match the order above
+    df = df[['sobol_scram', 'sobol_unscr', 'uniform', 'mpmc', 'halton_unscr', 'halton_scram', 'tri_lat', 'sukharev']]
     df.to_csv('results/analysis/summary_' + str(nodes) + "_" + str(iterations) + "_" + str(args.level) + '.csv')
 
 

@@ -42,8 +42,8 @@ pygame.init()
 MAP_DIMENSIONS = 640, 480
 
 def random_init_goal_positions():
-    x_init = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(0, MAP_DIMENSIONS[1] // 6))
-    x_goal = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(5 * MAP_DIMENSIONS[1] // 6, MAP_DIMENSIONS[1]))
+    x_init = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(0, MAP_DIMENSIONS[1] // 7))
+    x_goal = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(6 * MAP_DIMENSIONS[1] // 7, MAP_DIMENSIONS[1]))
     return x_init, x_goal
 
 def run_prm_iteration(distribution, x_init, x_goal, level):
@@ -141,18 +141,12 @@ def main(samplers):
 
     for iteration in tqdm(range(iterations)):
         x_init, x_goal = random_init_goal_positions()
-        ok = False
-        while not ok:
-            try:
-                run_prm_iteration('uniform', x_init, x_goal, level)
-                ok = True
-            except:
-                x_init, x_goal = random_init_goal_positions()
         for distribution in samplers:
-            iterations = 10 if distribution in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
-            for _ in range(iterations):
+            reps = 10 if distribution in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
+            for rep in range(reps):
                 path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal, level)
-                if not path_length == 0:
+                if not path_coordinates:
+                    print(f'Miss {distribution} iteration {iteration} at rep {rep}')
                     results[distribution]['lengths'].append(path_length)
                     results[distribution]['paths'].append(path_coordinates)
                     results[distribution]['init_goal_positions'].append((x_init, x_goal))
