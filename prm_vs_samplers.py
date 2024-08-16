@@ -148,6 +148,7 @@ def main(samplers):
                 path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal, level)
                 if not path_coordinates:
                     print(f'Miss {distribution} iteration {iteration} at rep {rep} with init {x_init} and goal {x_goal} and cardinality {cardinality}')
+                else:
                     results[distribution]['lengths'].append(path_length)
                     results[distribution]['paths'].append(path_coordinates)
                     results[distribution]['init_goal_positions'].append((x_init, x_goal))
