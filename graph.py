@@ -4,7 +4,7 @@ import math
 import numpy as np
 import queue
 
-class Graph():
+class Graph:
 	"""
 	A class for the Probabilistic RoadMap (PRM).
 	
@@ -140,54 +140,46 @@ class Graph():
 
 	def k_nearest(self, graph, x_rand, configuration, k=2):
 		"""Given k, it returns the k-nearest neighbors of x_rand.
-		
-		Searches in the graph the k-nearest neighbors.
 
-		Parameters
-		----------
-		graph : list
-			Graph containing all the coordinate nodes.
-		x_rand : tuple 
-			Coordinate of the random node generated.
-		configuration : tuple
-			Current configuration to search its k-neighbors.
-		k : int
-			Number of the closest neighbors to examine for each configuration.
+        Searches in the graph for the k-nearest neighbors.
 
-		Returns
-		-------
-		tuple
-			Nearest node to the random node generated.	
-		"""
-		# Get only the coordinates of the rects of the generated random nodes
-		graph_ = [coordinate.center for coordinate in graph]
-		x_rand = x_rand.center
-		configuration = configuration.center
+        Parameters
+        ----------
+        graph : list
+            Graph containing all the coordinate nodes.
+        x_rand : tuple or Rect
+            Coordinate of the random node generated.
+        configuration : tuple or Rect
+            Current configuration to search its k-neighbors.
+        k : int
+            Number of the closest neighbors to examine for each configuration.
 
-		distances = []
-		near = []
-		near_configurations = [] # Same as near variable but for rectangles
+        Returns
+        -------
+        list
+            Nearest nodes to the random node generated.
+        """
+		# Extract centers if Rect objects are provided
+		if hasattr(x_rand, 'center'):
+			x_rand = x_rand.center
+		if hasattr(configuration, 'center'):
+			configuration = configuration.center
 
-		for state in graph_:
-			distance = self.euclidean_distance(state, x_rand)
-			distances.append(distance)
+		# Get the centers of the nodes in the graph
+		graph_ = [node.center if hasattr(node, 'center') else node for node in graph]
 
-		# Index of the minimum distance to the generated random node
-		self.min_distance = np.argmin(distances) 
-		x_near = graph_[self.min_distance]
+		# Calculate all distances to x_rand
+		distances = [self.euclidean_distance(state, x_rand) for state in graph_]
 
-		# Indices of the k-smallest distances 
-		self.distances = np.asarray(distances.copy())
-		self.min_distances = np.argpartition(distances, k)
+		# Find the indices of the k-nearest neighbors
+		k_indices = np.argpartition(distances, k)[:k]
+		k_indices_sorted = k_indices[np.argsort(np.array(distances)[k_indices])]
 
-		# Get the k-smallest values from the graph
-		for i in range(k):
-			k_smallest = graph_[self.min_distances[i]]
-			near.append(k_smallest)
-			for node in graph:
-				if node.center == k_smallest:
-					near_configurations.append(node)
+		# Collect the nearest configurations
+		near = [graph_[i] for i in k_indices_sorted]
+		near_configurations = [node for node in graph if node.center in near]
 
+		# Update the neighbors for the given configuration
 		self.neighbors.update({configuration: near})
 
 		return near_configurations
@@ -297,6 +289,15 @@ class Graph():
 			current = open_set.get()[1]
 
 			open_set_hash.remove(current)
+
+			# Debugging statement
+			if current not in self.neighbors:
+				# find a point that is in self.neighbors and is within the radius to the current point
+				for nei in self.neighbors:
+					if self.euclidean_distance(current, nei) <= self.robot_radius:
+						current = nei
+						break
+
 			# Get the correspondant rectangle of the center point for the current configuration
 			for node in nodes:
 				if node.center == current:

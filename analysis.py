@@ -32,6 +32,8 @@ def analyse(nodes, iterations, plot=True):
     # header specifying the number of nodes and iterations
     print(f'Analyzing results for {nodes} nodes and {iterations} iterations')
     for distribution, data in results.items():
+        reps = 10 if distribution in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
+
         print(f'Sampler: {distribution}')
         res[distribution] = {}
         print(f'  Cardinality: {np.mean(data["cardinality"])}')
@@ -46,7 +48,6 @@ def analyse(nodes, iterations, plot=True):
         print(f'  Gain against Uniform: {gain:.2f}%')
         res[distribution]['percentage_gain'] = gain
 
-        reps = 10 if distribution in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
         misses = reps*iterations - len(data['lengths'])
         print(f'  Misses: {misses}')
 

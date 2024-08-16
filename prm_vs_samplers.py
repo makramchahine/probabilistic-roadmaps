@@ -42,8 +42,9 @@ pygame.init()
 MAP_DIMENSIONS = 640, 480
 
 def random_init_goal_positions():
-    x_init = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(0, MAP_DIMENSIONS[1] // 7))
-    x_goal = (np.random.randint(0, MAP_DIMENSIONS[0]), np.random.randint(6 * MAP_DIMENSIONS[1] // 7, MAP_DIMENSIONS[1]))
+    r = args.radius+1
+    x_init = (np.random.randint(r, MAP_DIMENSIONS[0]-r), np.random.randint(r, MAP_DIMENSIONS[1] // 7))
+    x_goal = (np.random.randint(r, MAP_DIMENSIONS[0]-r), np.random.randint(6 * MAP_DIMENSIONS[1] // 7, MAP_DIMENSIONS[1]-r))
     return x_init, x_goal
 
 def run_prm_iteration(distribution, x_init, x_goal, level):
@@ -146,7 +147,7 @@ def main(samplers):
             for rep in range(reps):
                 path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal, level)
                 if not path_coordinates:
-                    print(f'Miss {distribution} iteration {iteration} at rep {rep}')
+                    print(f'Miss {distribution} iteration {iteration} at rep {rep} with init {x_init} and goal {x_goal} and cardinality {cardinality}')
                     results[distribution]['lengths'].append(path_length)
                     results[distribution]['paths'].append(path_coordinates)
                     results[distribution]['init_goal_positions'].append((x_init, x_goal))
