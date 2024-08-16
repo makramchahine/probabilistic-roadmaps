@@ -46,12 +46,9 @@ def analyse(nodes, iterations, plot=True):
         print(f'  Gain against Uniform: {gain:.2f}%')
         res[distribution]['percentage_gain'] = gain
 
-        if distribution in ["mpmc", "sobol_unscr"]:
-            misses = iterations - len(data['lengths'])
-            print(f'  Misses: {misses}')
-        else:
-            misses = 10*iterations - len(data['lengths'])
-            print(f'  Misses: {misses}')
+        iter = 10 if distribution in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
+        misses = iter*iterations - len(data['lengths'])
+        print(f'  Misses: {misses}')
 
         res[distribution]['misses'] = misses
 
@@ -73,13 +70,13 @@ def analyse(nodes, iterations, plot=True):
         # Plotting results
         plt.figure()
         # make it 2x2 subplots
-        plt.subplot(2, 2, 1)
-        colors = {'sobol_scram': 'b', 'sobol_unscr': 'c', 'uniform': 'm', 'mpmc': 'g'}
-        plot_id = {'sobol_scram': 1, 'sobol_unscr': 2, 'uniform': 3, 'mpmc': 4}
-        alphas = {'sobol_scram': 0.1, 'sobol_unscr': 0.7, 'uniform': 0.1, 'mpmc': 0.7}
+        plt.subplot(2, 4, 1)
+        colors = {'sobol_scram': 'b', 'sobol_unscr': 'c', 'uniform': 'm', 'mpmc': 'g', 'halton_scram': 'r', 'halton_unscr': 'y', 'tri_lat': 'k', 'sukharev': 'orange'}
+        plot_id = {'sobol_scram': 1, 'sobol_unscr': 2, 'uniform': 3, 'mpmc': 4, 'halton_scram': 5, 'halton_unscr': 6, 'tri_lat': 7, 'sukharev': 8}
+        alphas = {'sobol_scram': 0.1, 'sobol_unscr': 0.7, 'uniform': 0.1, 'mpmc': 0.7, 'halton_scram': 0.1, 'halton_unscr': 0.7, 'tri_lat': 0.1, 'sukharev': 0.1}
 
         for distribution, data in results.items():
-            plt.subplot(2, 2, plot_id[distribution])
+            plt.subplot(2, 4, plot_id[distribution])
             # use the map png file as the background
             img = plt.imread('results/maps/map_level_' + str(args.level) + '.png')
             # flip the image vertically

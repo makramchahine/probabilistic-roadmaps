@@ -6,6 +6,7 @@ import sys
 from sampler import sampler
 import numpy as np
 from tqdm import tqdm
+import os
 
 # Command line arguments
 parser = argparse.ArgumentParser(description='Implements the PRM algorithm for path planning.')
@@ -27,6 +28,8 @@ parser.add_argument('-s', '--save', type=bool, action=argparse.BooleanOptionalAc
                     metavar='', required=False, default=False, help='Save the results to a numpy file')
 parser.add_argument('--draw', type=bool, action=argparse.BooleanOptionalAction,
                     metavar='', required=False, default=False, help='Draw the environment')
+parser.add_argument('--overwrite', type=bool, action=argparse.BooleanOptionalAction,
+                    metavar='', required=False, default=True, help='Overwrite the results file')
 parser.add_argument('-d', '--duration', type=float, default=0.02, help='Duration of the simulation')
 parser.add_argument('--level', type=int, default=1, help='Difficulty level of the environment')
 
@@ -130,8 +133,7 @@ def run_prm_iteration(distribution, x_init, x_goal, level):
     return path_length, graph_.path_coordinates, cardinality
 
 
-def main():
-    samplers = ['sobol_scram', 'sobol_unscr', 'uniform', 'mpmc']
+def main(samplers):
     results = {sampler: {'lengths': [], 'paths': [], 'init_goal_positions': [], 'cardinality': []} for sampler in samplers}
 
     iterations = args.iterations
@@ -147,7 +149,7 @@ def main():
             except:
                 x_init, x_goal = random_init_goal_positions()
         for distribution in samplers:
-            iterations = 10 if distribution in ['sobol_scram', 'uniform'] else 1
+            iterations = 10 if distribution in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
             for _ in range(iterations):
                 path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal, level)
                 if not path_length == 0:
@@ -158,12 +160,36 @@ def main():
 
     if args.save:
         file = "results/results_" + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + ".npy"
-        np.save(file, results)
-        print(f'Results saved to {file}')
+        print(f'This is {args.nodes} nodes and {args.iterations} iterations at level {args.level}')
+        exists = os.path.exists(file)
+
+        if exists:
+            old_results = np.load(file, allow_pickle=True).item()
+
+            # keys that are in results but not in old_results
+            new_keys = [key for key in results.keys() if key not in old_results.keys()]
+
+            # keys that are in both results and old_results
+            common_keys = [key for key in results.keys() if key in old_results.keys()]
+            
+            for key in new_keys:
+                # add the key to the old results
+                old_results[key] = results[key]
+                print(f'{key} results added')
+            if args.overwrite:
+                # overwrite the key in the old results
+                for key in common_keys:
+                    old_results[key] = results[key]
+                    print(f'{key} results overwritten')
+            np.save(file, old_results)
+        else:
+            np.save(file, results)
+            print(f'Results saved to {file}')
 
     pygame.quit()
     sys.exit()
 
 
 if __name__ == '__main__':
-    main()
+    samplers = ["uniform", "sobol_scram", "sobol_unscr", "halton_scram", "halton_unscr", "tri_lat", "sukharev", "mpmc"]
+    main(samplers)
