@@ -8,12 +8,12 @@ import numpy as np
 from tqdm import tqdm
 import os
 
+from config import SAMPLERS, MAP_DIMENSIONS, INITIAL
+
 # Command line arguments
 parser = argparse.ArgumentParser(description='Implements the PRM algorithm for path planning.')
 parser.add_argument('-o', '--obstacles', type=bool, action=argparse.BooleanOptionalAction,
                     metavar='', required=False, help='Obstacles on the map')
-parser.add_argument('-i', '--iterations', type=int, metavar='', required=False, default=10,
-                    help='Number of iterations to run')
 parser.add_argument('-srn', '--show_random_nodes', type=bool, action=argparse.BooleanOptionalAction,
                     metavar='', required=False, help='Show random nodes on screen')
 parser.add_argument('-n', '--nodes', type=int, metavar='', required=False, default=32,
@@ -32,20 +32,12 @@ parser.add_argument('--overwrite', type=bool, action=argparse.BooleanOptionalAct
                     metavar='', required=False, default=True, help='Overwrite the results file')
 parser.add_argument('-d', '--duration', type=float, default=0.02, help='Duration of the simulation')
 parser.add_argument('--level', type=int, default=1, help='Difficulty level of the environment')
+parser.add_argument('--reps', type=int, default=20, help='Number of repetitions for each randomized sampler')
 
 args = parser.parse_args()
 
 # Initialization
 pygame.init()
-
-# Constants
-MAP_DIMENSIONS = 640, 480
-
-def random_init_goal_positions():
-    r = args.radius+1
-    x_init = (np.random.randint(r, MAP_DIMENSIONS[0]-r), np.random.randint(r, MAP_DIMENSIONS[1] // 7))
-    x_goal = (np.random.randint(r, MAP_DIMENSIONS[0]-r), np.random.randint(6 * MAP_DIMENSIONS[1] // 7, MAP_DIMENSIONS[1]-r))
-    return x_init, x_goal
 
 def run_prm_iteration(distribution, x_init, x_goal, level):
     environment_ = environment.Environment(map_dimensions=MAP_DIMENSIONS, level=level)
@@ -137,17 +129,22 @@ def run_prm_iteration(distribution, x_init, x_goal, level):
 def main(samplers):
     results = {sampler: {'lengths': [], 'paths': [], 'init_goal_positions': [], 'cardinality': []} for sampler in samplers}
 
-    iterations = args.iterations
     level = args.level
 
-    for iteration in tqdm(range(iterations)):
-        x_init, x_goal = random_init_goal_positions()
+    x_init, x_goal = [INITIAL[level]['start']], [INITIAL[level]['goal']]
+
+
+    for i in tqdm(range(len(x_init))):
         for distribution in samplers:
-            reps = 10 if distribution in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
-            for rep in range(reps):
-                path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init, x_goal, level)
+
+            assert distribution in SAMPLERS, f'{distribution} is not a valid sampler'
+
+            reps = 1 if distribution in ["sobol_unscr", "halton_unscr", "mpmc"] else args.reps
+            for rep in tqdm(range(reps)):
+                path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init[i], x_goal[i], level)
                 if not path_coordinates:
-                    print(f'Miss {distribution} iteration {iteration} at rep {rep} with init {x_init} and goal {x_goal} and cardinality {cardinality}')
+                    continue
+                    # print(f'Miss {distribution} at rep {rep} and cardinality {cardinality}')
                 else:
                     results[distribution]['lengths'].append(path_length)
                     results[distribution]['paths'].append(path_coordinates)
@@ -155,8 +152,8 @@ def main(samplers):
                     results[distribution]['cardinality'].append(cardinality)
 
     if args.save:
-        file = "results/results_" + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + ".npy"
-        print(f'This is {args.nodes} nodes and {args.iterations} iterations at level {args.level}')
+        file = "results/results_" + str(args.nodes) + "_" + str(args.reps) + "_" + str(args.level) + ".npy"
+        print(f'This is {args.nodes} nodes and {args.reps} reps at level {args.level}')
         exists = os.path.exists(file)
 
         if exists:
@@ -187,5 +184,7 @@ def main(samplers):
 
 
 if __name__ == '__main__':
-    samplers = ["uniform", "sobol_scram", "sobol_unscr", "halton_scram", "halton_unscr", "tri_lat", "sukharev", "mpmc"]
+    # samplers = ["uniform", "sobol_scram", "sobol_unscr", "halton_scram", "halton_unscr", "tri_lat", "tri_lat_add", "sukharev", "sukharev_add", "mpmc", "mpmc_rand"]
+    # samplers = ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"]# "mpmc_rand"]
+    samplers = ["sobol_rand", "halton_rand"]
     main(samplers)

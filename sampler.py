@@ -6,6 +6,7 @@ import torch
 import matplotlib.pyplot as plt
 from scipy.stats.qmc import discrepancy as L2discrepancy
 from scipy.stats import qmc
+import os
 
 def get_best_batch_id(data, nsamples):
     nb = int(data.shape[0] / nsamples)
@@ -19,12 +20,7 @@ def get_best_batch_id(data, nsamples):
     return arg, discs[arg]
 
 def sampler(n_points = 32, dist = "uniform"):
-
-    # Check if dist is valid
-    dists_allowed = ["uniform", "sobol_scram", "sobol_unscr", "halton_scram", "halton_unscr", "tri_lat", "sukharev", "mpmc"]
-    assert dist in dists_allowed, f"dist must be one of {dists_allowed}"
-
-    if not dist=="uniform":
+    if dist in ["mpmc", "mpmc_rand"]:
         # Check if n_points is valid
         ns_allowed = [32, 64, 128, 256, 512, 1024]
         assert n_points in ns_allowed, f"n_points must be one of {ns_allowed} for {dist} distribution"
@@ -38,19 +34,89 @@ def sampler(n_points = 32, dist = "uniform"):
     elif dist == "sobol_unscr":
         x = qmc.Sobol(2, scramble=False).random(n_points)
 
+    elif dist == "sobol_rand":
+        x = qmc.Sobol(2, scramble=False).random(n_points)
+        x += np.random.rand(2)
+        x = x % 1
+
     elif dist == "mpmc":
         path = "/home/makramchahine/repos/PRM/MPMC_points/MPMC_d2_N"+str(n_points)+".npy"
         data = np.load(path)
         b_id, _ = get_best_batch_id(data, n_points)
         x = data[b_id * n_points:(b_id + 1) * n_points]
 
+    elif dist == "mpmc_rand":
+        path = "/home/makramchahine/repos/PRM/MPMC_points/MPMC_d2_N"+str(n_points)+".npy"
+        data = np.load(path)
+        b_id, _ = get_best_batch_id(data, n_points)
+        x = data[b_id * n_points:(b_id + 1) * n_points]
+
+        # add a random translation to the points
+        x += np.random.rand(2)
+        # make sure the points are still in the unit square (mod 1)
+        x = x % 1
+
     elif dist == "halton_scram":
         x = qmc.Halton(2, scramble=True).random(n_points)
 
     elif dist =="halton_unscr":
         x = qmc.Halton(2).random(n_points)
+    
+    elif dist =="halton_rand":
+        x = qmc.Halton(2).random(n_points)
+        x += np.random.rand(2)
+        x = x % 1
 
     elif dist =="tri_lat":
+        # find the smallest square grid that can fit n_points
+        n_side = int(np.ceil(np.sqrt(n_points)))
+        
+        # Set y_spacing to span the full height with n_side points
+        y_spacing = 1 / n_side
+        
+        # Calculate x_spacing to maintain the sqrt(3)/2 ratio
+        x_spacing = y_spacing / (np.sqrt(3) / 2)
+        
+        # Generate grid of points
+        x = []
+        for i in range(n_side):
+            for j in range(n_side):
+                x_coord = i * x_spacing
+                y_coord = j * y_spacing
+                
+                # Shift every other row by half the x_spacing
+                if j % 2 == 1:
+                    x_coord += 0.5 * x_spacing
+                
+                # Only include points within the unit square
+                if x_coord <= 1 and y_coord <= 1:
+                    x.append([x_coord, y_coord])
+        
+        # Convert to numpy array
+        x = np.array(x)
+
+        # shift all the values up by half the spacing at the top
+        x[:,1] += (1 - max(x[:,1]))/2
+        # shift all the values to the right by half the spacing at the right
+        x[:,0] += (1 - max(x[:,0]))/2
+
+        n_generated = len(x)
+        
+        # Remove random points until we have n_points
+        while n_generated > n_points:
+            # Randomly sample points from the points generated so far
+            idx = np.random.choice(n_generated)
+            x = np.delete(x, idx, axis=0)
+            n_generated -= 1
+
+        # rotate all point by 10*pi
+        theta = 10 * np.pi / 180
+        rot = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+        x = np.dot(x, rot)
+        # bring all points back to the unit square
+        x = x % 1
+
+    elif dist =="tri_lat_add":
         # Estimate the number of points along each direction
         n_side = int(np.floor(np.sqrt(n_points)))
         
@@ -99,8 +165,15 @@ def sampler(n_points = 32, dist = "uniform"):
                 if not any(np.all(np.isclose(new_point, x), axis=1)):
                     x = np.vstack((x, new_point))
                     n_generated += 1
+        
+        # rotate all point by 10*pi
+        theta = 10 * np.pi / 180
+        rot = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+        x = np.dot(x, rot)
+        # bring all points back to the unit square
+        x = x % 1
 
-    elif dist == "sukharev":
+    elif dist == "sukharev_add":
         # make a grid of points
         n = int(np.sqrt(n_points))
         x = np.array([[i/n, j/n] for i in range(n) for j in range(n)])
@@ -115,20 +188,97 @@ def sampler(n_points = 32, dist = "uniform"):
             pmx = np.random.choice([-1,1])
             pmy = np.random.choice([-1,1])
             new_point = x[idx] + np.array([pmx, pmy]) * 1/(2*n)
-            if new_point[0] <= 1 and new_point[1] <= 1 and new_point[0] >= 0 and new_point[1] >= 0:
+            if new_point[0] < 1 and new_point[1] < 1 and new_point[0] > 0 and new_point[1] > 0:
                 if not any(np.all(np.isclose(new_point, x), axis=1)):
                     x = np.vstack((x, new_point))
+        
+        # rotate all point by 10*pi
+        theta = 10 * np.pi / 180 
+        rot = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+        x = np.dot(x, rot)
+        # bring all points back to the unit square
+        x = x % 1
 
+    elif dist == "sukharev":
+        # find the smallest square grid that can fit n_points
+        n = np.ceil(np.sqrt(n_points))
+        # generate the grid
+        x = np.array([[i/n, j/n] for i in range(int(n)) for j in range(int(n))])
+        # shift by half the spacing in the x direction
+        x[:,0] += 1/(2*n)
+        # shift by half the spacing in the y direction
+        x[:,1] += 1/(2*n)
+
+        # remove random points until we have n_points
+        while len(x) > n_points:
+            idx = np.random.choice(len(x))
+            x = np.delete(x, idx, axis=0)
+
+        # rotate all point by 10*pi/180
+        theta = 10 * np.pi /180
+        rot = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+        x = np.dot(x, rot)
+        # bring all points back to the unit square
+        x = x % 1
+
+    else:
+        raise ValueError(f"Invalid distribution: {dist}")
     
     return x
 
-# for each of the distributions, generate 32 points and plot them
-dists = ["sukharev"]#, "sobol_scram", "sobol_unscr", "uniform", "mpmc", "halton_scram", "halton_unscr"]
-for dist in dists:
-    x = sampler(n_points=128, dist=dist)
-    plt.scatter(x[:,0], x[:,1], label=dist)
-plt.legend()
-plt.axis('equal')
-plt.xlim(0,1)
-plt.ylim(0,1)
-plt.savefig("results/sampler_comparison.png")
+
+# List of distributions and number of nodes
+# Directory to save the plots
+output_dir = "results"
+os.makedirs(output_dir, exist_ok=True)
+
+dists = ["sukharev", "sukharev_add", "sobol_scram", "sobol_unscr", "uniform", "mpmc", "mpmc_rand", "halton_scram", "halton_unscr", "tri_lat", "tri_lat_add"]
+nodes = [32, 64, 128, 256, 512, 1024]
+
+# # Initialize a dictionary to store the discrepancies
+# disc = {dist: {node: [] for node in nodes} for dist in dists}
+
+# # Compute the L2 discrepancy for each distribution and number of nodes
+# for dist in dists:
+#     for node in nodes:
+#         for _ in range(10):
+#             x = sampler(n_points=node, dist=dist)
+#             disc[dist][node].append(L2discrepancy(x, method='L2-star'))
+
+# # Compute the mean discrepancies
+# mean_disc = {dist: {node: np.mean(disc[dist][node]) for node in nodes} for dist in dists}
+
+# # Plot the bar plots
+# for node in nodes:
+#     means = [mean_disc[dist][node] for dist in dists]
+
+#     plt.figure(figsize=(10, 6))
+#     plt.bar(dists, means, color='skyblue')
+#     plt.xlabel('Distributions')
+#     plt.ylabel('Mean L2 Discrepancy')
+#     plt.title(f'Mean L2 Discrepancy for {node} Nodes')
+#     plt.xticks(rotation=45, ha='right')
+#     plt.yscale('log')
+#     plt.tight_layout()
+#     plt.savefig(os.path.join(output_dir, f"mean_disc_{node}.png"))
+#     plt.close()
+
+# plot the points sampled
+
+
+# Loop over each distribution type
+for dist in ["sukharev", "tri_lat"]:
+    # Sample 64 points using the specified distribution
+    x = sampler(n_points=32, dist=dist)
+
+    # Create a scatter plot
+    plt.figure(figsize=(6, 6))
+    plt.scatter(x[:, 0], x[:, 1], color='blue', s=10)
+    plt.axis('equal')
+    plt.title(f'Sampled Points - {dist}')
+    plt.xlabel('X-axis')
+    plt.ylabel('Y-axis')
+
+    # Save the plot
+    plt.savefig(os.path.join(output_dir, f"{dist}.png"))
+    plt.close()  # Close the plot to avoid overlapping plots

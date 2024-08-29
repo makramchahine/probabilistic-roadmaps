@@ -8,16 +8,20 @@ import matplotlib.pyplot as plt
 import pickle
 import pandas
 
+from config import SAMPLERS
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--nodes', type=int, default=100, help='Number of nodes in PRM roadmap')
-parser.add_argument('--iterations', type=int, default=10, help='Number of iterations to run')
 parser.add_argument('--level', type=int, default=1, help='Difficulty level of the environment')
-parser.add_argument('--plot', type=bool, default=True, help='Plot the results')
+parser.add_argument('--reps', type=int, default=10, help='Number of repetitions for each sampler')
+# if the plot flag is entered in the command line, the results will be plotted
+parser.add_argument('--plot', action='store_true', help='Plot the results')
 args = parser.parse_args()
 
-def analyse(nodes, iterations, plot=True):
+def analyse(nodes, reps, plot=True):
     # Load results from file
-    file = "results/results_" + str(nodes) + "_" + str(iterations) + "_" + str(args.level) + ".npy"
+    file = "results/results_" + str(nodes) + "_" + str(reps) + "_" + str(args.level) + ".npy"
+    print(f'Loading results from {file}')
     try:
         results = np.load(file, allow_pickle=True).item()
     except:
@@ -29,10 +33,10 @@ def analyse(nodes, iterations, plot=True):
     # each line will correspond to a distribution and each column to a metric
     res = {}
 
-    # header specifying the number of nodes and iterations
-    print(f'Analyzing results for {nodes} nodes and {iterations} iterations')
+    # header specifying the number of nodes
+    print(f'\n Analyzing results for {nodes} nodes and {reps} reps')
     for distribution, data in results.items():
-        reps = 10 if distribution in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
+        reps = 1 if distribution in ["sobol_unscr", "halton_unscr", "mpmc"] else args.reps
 
         print(f'Sampler: {distribution}')
         res[distribution] = {}
@@ -48,37 +52,48 @@ def analyse(nodes, iterations, plot=True):
         print(f'  Gain against Uniform: {gain:.2f}%')
         res[distribution]['percentage_gain'] = gain
 
-        misses = reps*iterations - len(data['lengths'])
+        misses = reps - len(data['lengths'])
         print(f'  Misses: {misses}')
+        # miss percentage
+        res[distribution]['miss_percentage'] = misses / (reps) * 100
+        print(f'  Miss Percentage: {misses / (reps) * 100:.2f}%')
 
         res[distribution]['misses'] = misses
 
     # save results to csv file
     df = pandas.DataFrame(res)
+    # if some samplers are missing, add them with NaN values
+    for sampler in SAMPLERS:
+        if sampler not in df.columns:
+            df[sampler] = np.nan
+
     # rearrange columns to match the order above
-    df = df[['sobol_scram', 'sobol_unscr', 'uniform', 'mpmc', 'halton_unscr', 'halton_scram', 'tri_lat', 'sukharev']]
-    df.to_csv('results/analysis/summary_' + str(nodes) + "_" + str(iterations) + "_" + str(args.level) + '.csv')
+    df = df[SAMPLERS]
+    
+    df.to_csv('results/analysis/summary_' + str(nodes) + "_" + str(args.level) + '.csv')
 
 
     if plot:
-        # make box plot of path lengths for each sampler from values printed above
-        plt.figure()
-        plt.boxplot([data['lengths'] for data in results.values()], tick_labels=results.keys())
-        plt.ylabel('Path Length')
-        plt.title('Path Lengths for Different Samplers')
-        name = 'results/analysis/path_lengths_' + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + '.png'
-        plt.savefig(name)
+        # # make box plot of path lengths for each sampler from values printed above
+        # plt.figure()
+        # plt.boxplot([data['lengths'] for data in results.values()], tick_labels=results.keys())
+        # plt.ylabel('Path Length')
+        # plt.title('Path Lengths for Different Samplers')
+        # name = 'results/analysis/path_lengths_' + str(nodes) + "_" + str(reps) + "_" + str(args.level) + '.png'
+        # plt.savefig(name)
         
         # Plotting results
         plt.figure()
-        # make it 2x2 subplots
-        plt.subplot(2, 4, 1)
-        colors = {'sobol_scram': 'b', 'sobol_unscr': 'c', 'uniform': 'm', 'mpmc': 'g', 'halton_scram': 'r', 'halton_unscr': 'y', 'tri_lat': 'k', 'sukharev': 'orange'}
-        plot_id = {'sobol_scram': 1, 'sobol_unscr': 2, 'uniform': 3, 'mpmc': 4, 'halton_scram': 5, 'halton_unscr': 6, 'tri_lat': 7, 'sukharev': 8}
-        alphas = {'sobol_scram': 0.1, 'sobol_unscr': 0.7, 'uniform': 0.1, 'mpmc': 0.7, 'halton_scram': 0.1, 'halton_unscr': 0.7, 'tri_lat': 0.1, 'sukharev': 0.1}
+        # make it 4x4 subplots
+        plt.subplot(4, 4, 1)
+        plot_id = {dist: i+1 for i, dist in enumerate(SAMPLERS)}
+        alphas = {dist: 0.5 for dist in SAMPLERS}
+        alphas['mpmc'] = 1
+        alphas['sobol_unscr'] = 1
+        alphas['halton_unscr'] = 1
 
         for distribution, data in results.items():
-            plt.subplot(2, 4, plot_id[distribution])
+            plt.subplot(4, 4, plot_id[distribution])
             # use the map png file as the background
             img = plt.imread('results/maps/map_level_' + str(args.level) + '.png')
             # flip the image vertically
@@ -88,10 +103,10 @@ def analyse(nodes, iterations, plot=True):
 
             for path_coordinates in data['paths']:
                 xs, ys = zip(*path_coordinates)
-                plt.plot(xs, ys, color=colors[distribution], label=f'{distribution} path', alpha=alphas[distribution])
+                plt.plot(xs, ys, color='olive', label=f'{distribution} path', alpha=alphas[distribution])
                 # plot the start and goal positions with big red and green dots
-                plt.plot(xs[0], ys[0], 'ro', label='Start', ms=2)
-                plt.plot(xs[-1], ys[-1], 'o', label='Goal', ms=2, color='orange')
+                plt.plot(xs[0], ys[0], 'go', label='Start', ms=4)
+                plt.plot(xs[-1], ys[-1], 'ro', label='Goal', ms=4)
 
             plt.title(f'{distribution}')
             # remove ticks
@@ -101,8 +116,8 @@ def analyse(nodes, iterations, plot=True):
             plt.gca().invert_yaxis()
 
         plt.tight_layout()
-        name = 'results/analysis/paths_' + str(args.nodes) + "_" + str(args.iterations) + "_" + str(args.level) + '.png'
+        name = 'results/analysis/paths_' + str(nodes) + "_" + str(reps) + "_" + str(args.level) + '.png'
         plt.savefig(name)
 
 if __name__ == '__main__':
-    analyse(args.nodes, args.iterations, args.plot)
+    analyse(args.nodes, args.reps, args.plot)

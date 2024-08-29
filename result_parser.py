@@ -86,8 +86,8 @@ oranges = plt.cm.Oranges(np.linspace(0.3, 0.8, len(levels)))
 purples = plt.cm.Purples(np.linspace(0.3, 0.8, len(levels)))
 reds = plt.cm.Reds(np.linspace(0.3, 0.8, len(levels)))
 grays = plt.cm.Greys(np.linspace(0.3, 0.8, len(levels)))
-coppers = plt.cm.summer(np.linspace(0.3, 0.8, len(levels)))
-pinks = plt.cm.pink(np.linspace(0.3, 0.8, len(levels)))
+coppers = plt.cm.copper(np.linspace(0.3, 0.8, len(levels)))[::-1]
+pinks = plt.cm.pink(np.linspace(0.3, 0.8, len(levels)))[::-1]
 
 
 color_palettes = {
@@ -180,7 +180,7 @@ group_width = bar_width * len(levels)  # Total width of all bars in a group
 
 # Plotting each distrib separately
 for i, distrib in enumerate(distribs):
-    reps = 10 if distrib in ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"] else 1
+    reps = 1 if distribution in ["sobol_unscr", "halton_unscr", "mpmc"] else args.reps
     for j, level in enumerate(levels):
         values = [100*miss_data[level][node][distrib]/(reps*40) for node in nodes]
 
