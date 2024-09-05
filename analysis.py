@@ -28,7 +28,6 @@ def analyse(nodes, reps, plot=True):
         print('Results file not found. Please run the PRM sampler comparison script first.')
         return
 
-
     # Print results and save them to a csv file
     # each line will correspond to a distribution and each column to a metric
     res = {}
@@ -36,7 +35,13 @@ def analyse(nodes, reps, plot=True):
     # header specifying the number of nodes
     print(f'\n Analyzing results for {nodes} nodes and {reps} reps')
     for distribution, data in results.items():
-        reps = 1 if distribution in ["sobol_unscr", "halton_unscr", "mpmc"] else args.reps
+        if distribution in ['mpmc_batch', 'mpmc_l2bat']:
+            reps = results[distribution]['batch_size'][0]
+        elif distribution in ["mpmc", "mpmc_seq", "sobol_unscr", "halton_unscr"]:
+            reps = 1 
+        else:
+            reps = args.reps
+
 
         print(f'Sampler: {distribution}')
         res[distribution] = {}
@@ -52,11 +57,13 @@ def analyse(nodes, reps, plot=True):
         print(f'  Gain against Uniform: {gain:.2f}%')
         res[distribution]['percentage_gain'] = gain
 
+
         misses = reps - len(data['lengths'])
         print(f'  Misses: {misses}')
         # miss percentage
         res[distribution]['miss_percentage'] = misses / (reps) * 100
         print(f'  Miss Percentage: {misses / (reps) * 100:.2f}%')
+        print(f'reps: {reps}')
 
         res[distribution]['misses'] = misses
 
@@ -89,8 +96,7 @@ def analyse(nodes, reps, plot=True):
         plot_id = {dist: i+1 for i, dist in enumerate(SAMPLERS)}
         alphas = {dist: 0.5 for dist in SAMPLERS}
         alphas['mpmc'] = 1
-        alphas['sobol_unscr'] = 1
-        alphas['halton_unscr'] = 1
+        alphas['mpmc_seq'] = 1
 
         for distribution, data in results.items():
             plt.subplot(4, 4, plot_id[distribution])

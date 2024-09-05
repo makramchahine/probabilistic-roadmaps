@@ -2,7 +2,7 @@ import pygame
 import os
 import numpy as np
 
-from config import MAP_DIMENSIONS, POSI, INIT
+from config import MAP_DIMENSIONS, POSI, INIT, INITIAL
 
 class Environment:
     '''
@@ -172,17 +172,11 @@ class Environment:
         Generate a maze-like environment with 'I' shaped obstacles restricted to the middle 2/3rds of the map vertically.
         """
         maze_obstacles = []
-        spacing = 10
-        obstacle_width = 60
-        obstacle_height = 60
-        decal = 5
-        decaf = 20
-        y_min = self.HEIGHT // 6
-        y_max = 5 * self.HEIGHT // 6
-        for i in range(40):
-            x = POSI[i + decal][0]
-            y = POSI[i + decal][1]
-            obstacle = self.make_obstacles_I((x, y), INIT[i + decaf][0], INIT[i + decaf][1])
+        for i in range(100):
+            x = POSI[i][0]
+            y = (POSI[i][1] - self.HEIGHT // 6) * 1.75
+            scale = 0.8
+            obstacle = self.make_obstacles_I((x+5, y), scale*INIT[i][0], scale*INIT[i][1])
             maze_obstacles.append(obstacle)
         self.obstacles = maze_obstacles
 
@@ -285,6 +279,9 @@ class Environment:
             for obstacle in obstacles:
                 color = self.GRAY
                 pygame.draw.rect(map, color, obstacle)
+            # add the start and goal positions
+            pygame.draw.circle(map, self.GREEN, INITIAL[self.level]['start'], 5)
+            pygame.draw.circle(map, self.RED, INITIAL[self.level]['goal'], 5)
             pygame.image.save(map, 'results/maps/map_level_' + str(self.level) + '.png')
         return obstacles
 

@@ -1,11 +1,14 @@
-SAMPLERS = ["uniform", "sobol_scram", "sobol_unscr", "sobol_rand", "halton_scram", "halton_unscr", "halton_rand", "tri_lat", "tri_lat_add", "sukharev", "sukharev_add", "mpmc", "mpmc_rand"]
+SAMPLERS = ["uniform", "sobol_scram", "sobol_unscr", "sobol_batch", "sobol_rand", "halton_scram", "halton_unscr",
+            "halton_batch", "halton_rand", "tri_lat", "tri_lat_add", "sukharev", "sukharev_add", "mpmc",
+            "mpmc_rand", "mpmc_seq", "mpmc_batch", "mpmc_l2bat"]
 
 # Constants
 MAP_DIMENSIONS = 640, 480
 
 # Starting and goal positions
-INITIAL ={1: {"start": (10, 10), "goal": (630, 470)},
-          2: {"start": (10, 10), "goal": (610, 240)},
+INITIAL ={0: {"start": (10, 10), "goal": (630, 470)},
+          1: {"start": (10, 10), "goal": (630, 470)},
+          2: {"start": (10, 10), "goal": (550, 235)},
           3: {"start": (10, 10), "goal": (630, 470)},
 }
 

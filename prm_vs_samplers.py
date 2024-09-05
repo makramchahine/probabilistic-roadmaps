@@ -39,7 +39,7 @@ args = parser.parse_args()
 # Initialization
 pygame.init()
 
-def run_prm_iteration(distribution, x_init, x_goal, level):
+def run_prm_iteration(distribution, x_init, x_goal, level, rep):
     environment_ = environment.Environment(map_dimensions=MAP_DIMENSIONS, level=level)
     graph_ = graph.Graph(start=x_init, goal=x_goal, map_dimensions=MAP_DIMENSIONS, radius=args.radius)
     configurations = []
@@ -68,7 +68,10 @@ def run_prm_iteration(distribution, x_init, x_goal, level):
             if event.type == pygame.QUIT:
                 return None
 
-        points = sampler(n_points=args.nodes, dist=distribution)
+        points = sampler(n_points=args.nodes, dist=distribution, rep=rep)
+
+        if points is None:
+            return None, None, None, rep
 
         if sampling:
             for point in points:
@@ -123,37 +126,57 @@ def run_prm_iteration(distribution, x_init, x_goal, level):
 
         pygame.display.update()
 
-    return path_length, graph_.path_coordinates, cardinality
+    return path_length, graph_.path_coordinates, cardinality, None
 
 
 def main(samplers):
-    results = {sampler: {'lengths': [], 'paths': [], 'init_goal_positions': [], 'cardinality': []} for sampler in samplers}
+    results = {sampler: {'lengths': [], 'paths': [], 'init_goal_positions': [], 'cardinality': [], 'batch_size': []} for sampler in samplers}
 
     level = args.level
 
     x_init, x_goal = [INITIAL[level]['start']], [INITIAL[level]['goal']]
 
 
-    for i in tqdm(range(len(x_init))):
+    for i in range(len(x_init)):
         for distribution in samplers:
 
             assert distribution in SAMPLERS, f'{distribution} is not a valid sampler'
 
-            reps = 1 if distribution in ["sobol_unscr", "halton_unscr", "mpmc"] else args.reps
-            for rep in tqdm(range(reps)):
-                path_length, path_coordinates, cardinality = run_prm_iteration(distribution, x_init[i], x_goal[i], level)
-                if not path_coordinates:
+            if distribution in ["mpmc", "mpmc_rand"]:
+                # Check if n_points is valid
+                ns_allowed = [32, 64, 128, 256, 512, 1024]
+                # if args.nodes not in ns_allowed break from the distribution loop
+                if args.nodes not in ns_allowed:
+                    print(f'{distribution} cannot be run with {args.nodes} nodes')
                     continue
+
+            misses = 0
+
+            reps = 1 if distribution in ["mpmc", "mpmc_seq", "sobol_unscr", "halton_unscr"] else args.reps
+
+            pbar = tqdm(range(reps), desc=f'{distribution} at level {level}')
+            for rep in pbar:
+                try:
+                    path_length, path_coordinates, cardinality, bs = run_prm_iteration(distribution, x_init[i], x_goal[i], level, rep)
+                    if bs:
+                        print(f'{distribution} has batch size {bs}')
+                        results[distribution]['batch_size'].append(bs)
+                        break
+                except:
+                    path_coordinates = None
+
+                if not path_coordinates:
+                    misses += 1
                     # print(f'Miss {distribution} at rep {rep} and cardinality {cardinality}')
                 else:
                     results[distribution]['lengths'].append(path_length)
                     results[distribution]['paths'].append(path_coordinates)
                     results[distribution]['init_goal_positions'].append((x_init, x_goal))
                     results[distribution]['cardinality'].append(cardinality)
+                pbar.set_description(f'{distribution} at level {level}, Misses: {misses}/{rep+1}')
 
     if args.save:
         file = "results/results_" + str(args.nodes) + "_" + str(args.reps) + "_" + str(args.level) + ".npy"
-        print(f'This is {args.nodes} nodes and {args.reps} reps at level {args.level}')
         exists = os.path.exists(file)
 
         if exists:
@@ -168,12 +191,12 @@ def main(samplers):
             for key in new_keys:
                 # add the key to the old results
                 old_results[key] = results[key]
-                print(f'{key} results added')
+                print(f'{key} results added to {file}')
             if args.overwrite:
                 # overwrite the key in the old results
                 for key in common_keys:
                     old_results[key] = results[key]
-                    print(f'{key} results overwritten')
+                    print(f'{key} results overwritten in {file}')
             np.save(file, old_results)
         else:
             np.save(file, results)
@@ -185,6 +208,11 @@ def main(samplers):
 
 if __name__ == '__main__':
     # samplers = ["uniform", "sobol_scram", "sobol_unscr", "halton_scram", "halton_unscr", "tri_lat", "tri_lat_add", "sukharev", "sukharev_add", "mpmc", "mpmc_rand"]
-    # samplers = ["uniform", "sobol_scram", "halton_scram", "tri_lat", "sukharev"]# "mpmc_rand"]
-    samplers = ["sobol_rand", "halton_rand"]
+    # samplers = ["uniform", "sobol_scram", "sobol_rand", "halton_rand", "halton_scram", "tri_lat", "sukharev", "mpmc_rand"]
+    # samplers = ["sobol_scram", "sobol_rand", "halton_rand", "halton_scram", "tri_lat", "sukharev"]
+    # samplers = ["sobol_unscr", "halton_unscr"]#, "mpmc_seq", "mpmc", "uniform"]
+    samplers = ["mpmc_l2bat"]
+
+    # samplers = ["mpmc_rand", "uniform"]
+    print(f'This is {args.nodes} nodes and {args.reps} reps at level {args.level}')
     main(samplers)

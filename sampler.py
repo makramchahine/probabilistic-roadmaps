@@ -19,8 +19,8 @@ def get_best_batch_id(data, nsamples):
 
     return arg, discs[arg]
 
-def sampler(n_points = 32, dist = "uniform"):
-    if dist in ["mpmc", "mpmc_rand"]:
+def sampler(n_points = 32, dist = "uniform", rep=0):
+    if dist in ["mpmc", "mpmc_rand", "mpmc_batch", "mpmc_l2bat"]:
         # Check if n_points is valid
         ns_allowed = [32, 64, 128, 256, 512, 1024]
         assert n_points in ns_allowed, f"n_points must be one of {ns_allowed} for {dist} distribution"
@@ -34,6 +34,12 @@ def sampler(n_points = 32, dist = "uniform"):
     elif dist == "sobol_unscr":
         x = qmc.Sobol(2, scramble=False).random(n_points)
 
+    elif dist == "sobol_batch":
+        sobol_sampler = qmc.Sobol(2, scramble=False)
+        sobol_sampler.fast_forward(rep*n_points + 1)
+        x = sobol_sampler.random(n_points)
+
+
     elif dist == "sobol_rand":
         x = qmc.Sobol(2, scramble=False).random(n_points)
         x += np.random.rand(2)
@@ -44,6 +50,24 @@ def sampler(n_points = 32, dist = "uniform"):
         data = np.load(path)
         b_id, _ = get_best_batch_id(data, n_points)
         x = data[b_id * n_points:(b_id + 1) * n_points]
+
+    elif dist == "mpmc_batch":
+        path = "/home/makramchahine/repos/PRM/MPMC_points/MPMC_d2_N"+str(n_points)+".npy"
+        data = np.load(path)
+        bs = int(data.shape[0]/n_points)
+        if rep >= bs:
+            return None
+        else:
+            x = data[rep * n_points:(rep + 1) * n_points]
+
+    elif dist == "mpmc_l2bat":
+        path = "/home/makramchahine/repos/PRM/L2_MPMC_points/MPMC_d2_N"+str(n_points)+".npy"
+        data = np.load(path)
+        bs = int(data.shape[0]/n_points)
+        if rep >= bs:
+            return None
+        else:
+            x = data[rep * n_points:(rep + 1) * n_points]
 
     elif dist == "mpmc_rand":
         path = "/home/makramchahine/repos/PRM/MPMC_points/MPMC_d2_N"+str(n_points)+".npy"
@@ -56,15 +80,27 @@ def sampler(n_points = 32, dist = "uniform"):
         # make sure the points are still in the unit square (mod 1)
         x = x % 1
 
+    elif dist == "mpmc_seq":
+        path = "/home/makramchahine/repos/PRM/MPMC_points/ordered_MPMC_d2_N1024.npy"
+        data = np.load(path)
+        x = data[:n_points]
+
     elif dist == "halton_scram":
         x = qmc.Halton(2, scramble=True).random(n_points)
 
     elif dist =="halton_unscr":
-        x = qmc.Halton(2).random(n_points)
+        x = qmc.Halton(2, scramble=False).random(n_points)
+
+    elif dist =="halton_batch":
+        halton_sampler = qmc.Halton(d=2,scramble=False)
+        halton_sampler.fast_forward(rep*n_points)
+        x = halton_sampler.random(n_points)
     
     elif dist =="halton_rand":
-        x = qmc.Halton(2).random(n_points)
+        x = qmc.Halton(2, scramble=False).random(n_points)
+        # add a random translation to the points
         x += np.random.rand(2)
+        # make sure the points are still in the unit square (mod 1)
         x = x % 1
 
     elif dist =="tri_lat":
@@ -227,15 +263,15 @@ def sampler(n_points = 32, dist = "uniform"):
     return x
 
 
-# List of distributions and number of nodes
-# Directory to save the plots
-output_dir = "results"
-os.makedirs(output_dir, exist_ok=True)
+# # List of distributions and number of nodes
+# # Directory to save the plots
+# output_dir = "results"
+# os.makedirs(output_dir, exist_ok=True)
 
-dists = ["sukharev", "sukharev_add", "sobol_scram", "sobol_unscr", "uniform", "mpmc", "mpmc_rand", "halton_scram", "halton_unscr", "tri_lat", "tri_lat_add"]
-nodes = [32, 64, 128, 256, 512, 1024]
+# dists = ["uniform", "sobol_scram", "sobol_unscr", "sobol_rand", "halton_scram", "halton_unscr", "halton_rand", "tri_lat", "tri_lat_add", "sukharev", "sukharev_add", "mpmc", "mpmc_rand", "mpmc_seq"]
+# nodes = [32, 64, 128, 256, 512, 1024]
 
-# # Initialize a dictionary to store the discrepancies
+# # # Initialize a dictionary to store the discrepancies
 # disc = {dist: {node: [] for node in nodes} for dist in dists}
 
 # # Compute the L2 discrepancy for each distribution and number of nodes
@@ -263,22 +299,73 @@ nodes = [32, 64, 128, 256, 512, 1024]
 #     plt.savefig(os.path.join(output_dir, f"mean_disc_{node}.png"))
 #     plt.close()
 
-# plot the points sampled
+# # plot the points sampled
 
 
-# Loop over each distribution type
-for dist in ["sukharev", "tri_lat"]:
-    # Sample 64 points using the specified distribution
-    x = sampler(n_points=32, dist=dist)
+# # Loop over each distribution type
+# for dist in ["uniform", "sobol_scram", "sobol_unscr", "sobol_rand", "halton_scram", "halton_unscr", "halton_rand", "tri_lat", "tri_lat_add", "sukharev", "sukharev_add", "mpmc", "mpmc_rand", "mpmc_seq"]:
+#     # Sample 64 points using the specified distribution
+#     x = sampler(n_points=32, dist=dist)
 
-    # Create a scatter plot
-    plt.figure(figsize=(6, 6))
-    plt.scatter(x[:, 0], x[:, 1], color='blue', s=10)
-    plt.axis('equal')
-    plt.title(f'Sampled Points - {dist}')
-    plt.xlabel('X-axis')
-    plt.ylabel('Y-axis')
+#     # Create a scatter plot
+#     plt.figure(figsize=(6, 6))
+#     plt.scatter(x[:, 0], x[:, 1], color='blue', s=10)
+#     plt.axis('equal')
+#     plt.title(f'Sampled Points - {dist}')
+#     plt.xlabel('X-axis')
+#     plt.ylabel('Y-axis')
 
-    # Save the plot
-    plt.savefig(os.path.join(output_dir, f"{dist}.png"))
-    plt.close()  # Close the plot to avoid overlapping plots
+#     # Save the plot
+#     plt.savefig(os.path.join(output_dir, f"{dist}.png"))
+#     plt.close()  # Close the plot to avoid overlapping plots
+
+# # run halton_unscr 10 times and plot the points on the subplots
+# fig = plt.figure(figsize=(10, 10))
+# for n in range(1,10):
+#     plt.subplot(3, 3, n)
+#     x = sampler(n_points=n+5, dist="sobol_unscr")
+#     plt.scatter(x[:, 0], x[:, 1], s=10)
+#     plt.axis('equal')
+# plt.savefig("halton_unscr.png")
+
+# plot halton_unscr, sobol_unscr with 16 and 32 points on two subplots (one per distribution)
+
+# n1 = 256
+# n2 = 128
+
+# fig = plt.figure(figsize=(10, 5))
+# plt.subplot(1, 2, 1)
+# x = sampler(n_points=n1, dist="sobol_unscr")
+# # in blue
+# plt.scatter(x[:, 0], x[:, 1], s=10, color='blue', alpha=0.5)
+# # now 32 in red 
+# x = sampler(n_points=n2, dist="sobol_unscr")
+# plt.scatter(x[:, 0], x[:, 1], s=10, color='gold', alpha=0.5)
+# plt.axis('equal')
+# plt.title("sobol_unscr")
+
+# plt.subplot(1, 2, 2)
+# x = sampler(n_points=n1, dist="halton_unscr")
+# # in blue
+# plt.scatter(x[:, 0], x[:, 1], s=10, color='blue', alpha=0.5)
+# # now 32 in red
+# x = sampler(n_points=n2, dist="halton_unscr")
+# plt.scatter(x[:, 0], x[:, 1], s=10, color='gold', alpha=0.5)
+# plt.axis('equal')
+# plt.title("halton_unscr")
+# plt.savefig("sobol_halton_unscr.png")
+
+# # plot the mpmc_batch distribution with 32 points for over 32 reps
+# for rep in range(32):
+#     x = sampler(n_points=32, dist="mpmc_batch", rep=rep)
+#     if x is not None:
+#         plt.scatter(x[:, 0], x[:, 1], s=10)
+# plt.axis('equal')
+# plt.savefig("mpmc_batch.png")
+
+# plot the halton_batch distribution with different rep seeds
+for rep in range(3):
+    x = sampler(n_points=16, dist="sobol_batch", rep=rep)
+    plt.scatter(x[:, 0], x[:, 1], s=10)
+plt.axis('equal')
+plt.savefig("halton_batch.png")
